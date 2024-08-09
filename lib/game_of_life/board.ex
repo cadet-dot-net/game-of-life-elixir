@@ -22,19 +22,22 @@ defmodule GameOfLife.Board do
     |> Enum.map(&Task.await/1)
     |> remove_nil_cells()
   end
-  
+
   @doc "Returns new born cells on the next generation"
   def become_alive_tick(alive_cells) do
     GameOfLife.Cell.dead_neighbours(alive_cells)
     |> Enum.map(
-      &(Task.Supervisor.async(
-        {GameOfLife.TaskSupervisor, GameOfLife.NodeManager.random_node},
-        GameOfLife.Board, :become_alive_or_nilify, [alive_cells, &1])
-      ))
+      &Task.Supervisor.async(
+        {GameOfLife.TaskSupervisor, GameOfLife.NodeManager.random_node()},
+        GameOfLife.Board,
+        :become_alive_or_nilify,
+        [alive_cells, &1]
+      )
+    )
     |> Enum.map(&Task.await/1)
     |> remove_nil_cells
-    end
-  
+  end
+
   def become_alive_or_nilify(alive_cells, dead_cell) do
     if GameOfLife.Cell.become_alive?(alive_cells, dead_cell), do: dead_cell, else: nil
   end
