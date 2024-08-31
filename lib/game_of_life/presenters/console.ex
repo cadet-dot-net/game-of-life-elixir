@@ -27,7 +27,7 @@ defmodule GameOfLife.Presenters.Console do
     for y <- y_range, x <- x_range do
       # draw y axis
       if x == start_x do
-        ((y |> Integer.to_string() |> String.rjust(y_padding)) <> "| ")
+        ((y |> Integer.to_string() |> String.pad_leading(y_padding)) <> "| ")
         |> IO.write()
       end
 
@@ -37,19 +37,19 @@ defmodule GameOfLife.Presenters.Console do
     end
 
     # draw x axis
-    IO.write(String.rjust("| ", y_padding + 2))
+    IO.write(String.pad_leading("| ", y_padding + 2))
     x_length = round((end_x - start_x) / 2)
 
-    for x <- 0..x_length, do: IO.write("_ ")
+    for _ <- 0..x_length, do: IO.write("_ ")
 
     IO.puts("")
-    IO.write(String.rjust("/  ", y_padding + 2))
+    IO.write(String.pad_leading("/  ", y_padding + 2))
 
     for x <- x_range do
       if rem(x, x_padding) == 0 do
         x
         |> Integer.to_string()
-        |> String.ljust(x_padding)
+        |> String.pad_trailing(x_padding)
         |> IO.write()
       end
     end

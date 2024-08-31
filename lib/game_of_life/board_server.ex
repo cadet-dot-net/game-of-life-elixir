@@ -49,19 +49,20 @@ defmodule GameOfLife.BoardServer do
   use GenServer
   require Logger
 
+  alias GameOfLife.{Board, NodeManager, TaskSupervisor}
+
   @name {:global, __MODULE__}
-  # milliseconds
-  @game_speed 1000
+  @game_speed_ms 1000
 
   # Client
   def start_link(alive_cells) do
     case GenServer.start_link(__MODULE__, {alive_cells, nil, 0}, name: @name) do
       {:ok, pid} ->
-        Logger.info("Started #{__MODULE__} master")
+        Logger.info("Started #{__MODULE__} parent")
         {:ok, pid}
 
       {:error, {:already_started, pid}} ->
-        Logger.info("Started #{__MODULE__} slave")
+        Logger.info("Started #{__MODULE__} child")
         {:ok, pid}
     end
   end
@@ -94,7 +95,7 @@ defmodule GameOfLife.BoardServer do
     GenServer.cast(@name, :tick)
   end
 
-  def start_game(speed \\ @game_speed) do
+  def start_game(speed \\ @game_speed_ms) do
     GenServer.call(@name, {:start_game, speed})
   end
 
@@ -105,6 +106,11 @@ defmodule GameOfLife.BoardServer do
   def change_speed(speed) do
     stop_game()
     start_game(speed)
+  end
+
+  # Server callbacks
+  def init({alive_cells, nil, 0}) do
+    {:ok, {alive_cells, nil, 0}}
   end
 
   def handle_call(:alive_cells, _from, {alive_cells, _tref, _generation_counter} = state) do
@@ -124,7 +130,7 @@ defmodule GameOfLife.BoardServer do
   end
 
   def handle_call({:add_cells, cells}, _from, {alive_cells, tref, generation_counter}) do
-    alive_cells = GameOfLife.Board.add_cells(alive_cells, cells)
+    alive_cells = Board.add_cells(alive_cells, cells)
     {:reply, alive_cells, {alive_cells, tref, generation_counter}}
   end
 
@@ -147,13 +153,13 @@ defmodule GameOfLife.BoardServer do
 
   def handle_call(:stop_game, _from, {alive_cells, tref, generation_counter}) do
     {:ok, :cancel} = :timer.cancel(tref)
-    {:reply, :game_stoped, {alive_cells, nil, generation_counter}}
+    {:reply, :game_stopped, {alive_cells, nil, generation_counter}}
   end
 
   def handle_cast(:tick, {alive_cells, tref, generation_counter}) do
     keep_alive_task =
       Task.Supervisor.async(
-        {GameOfLife.TaskSupervisor, GameOfLife.NodeManager.random_node()},
+        {TaskSupervisor, NodeManager.random_node()},
         GameOfLife.Board,
         :keep_alive_tick,
         [alive_cells]
@@ -161,7 +167,7 @@ defmodule GameOfLife.BoardServer do
 
     become_alive_task =
       Task.Supervisor.async(
-        {GameOfLife.TaskSupervisor, GameOfLife.NodeManager.random_node()},
+        {TaskSupervisor, NodeManager.random_node()},
         GameOfLife.Board,
         :become_alive_tick,
         [alive_cells]

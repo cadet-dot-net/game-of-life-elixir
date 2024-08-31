@@ -10,12 +10,21 @@ defmodule GameOfLife.Application do
     init_alive_cells = []
 
     children = [
-      # Define workers and child supervisors to be supervised
-      # worker(GameOfLife.Worker, [arg1, arg2, arg3])
-      supervisor(Task.Supervisor, [[name: GameOfLife.TaskSupervisor]]),
-      worker(GameOfLife.BoardServer, [init_alive_cells]),
-      # We will uncomment this line later
-      worker(GameOfLife.GamePrinter, [])
+      %{
+        id: GameOfLife.TaskSupervisor,
+        start: {Task.Supervisor, :start_link, []},
+        type: :supervisor
+      },
+      %{
+        id: GameOfLife.BoardServer,
+        start: {GameOfLife.BoardServer, :start_link, [init_alive_cells]},
+        type: :worker
+      },
+      %{
+        id: GameOfLife.GamePrinter,
+        start: {GameOfLife.GamePrinter, :start_link, []},
+        type: :worker
+      }
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
