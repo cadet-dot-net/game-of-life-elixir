@@ -3,17 +3,19 @@ defmodule GameOfLife.Application do
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
+
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
     init_alive_cells = []
-    # Define workers and child supervisors to be supervised
+
     children = [
+      # Define workers and child supervisors to be supervised
       # worker(GameOfLife.Worker, [arg1, arg2, arg3])
       supervisor(Task.Supervisor, [[name: GameOfLife.TaskSupervisor]]),
-      worker(GameOfLife.BoardServer, [init_alive_cells])
+      worker(GameOfLife.BoardServer, [init_alive_cells]),
       # We will uncomment this line later
-      # worker(GameOfLife.GamePrinter, [])
+      worker(GameOfLife.GamePrinter, [])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
